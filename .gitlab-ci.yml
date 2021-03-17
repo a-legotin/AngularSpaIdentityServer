@@ -1,0 +1,48 @@
+image: mcr.microsoft.com/dotnet/sdk:5.0
+
+stages:
+    - build
+    - build-docker
+
+variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://localhost:2375
+
+services:
+    - docker:19.03.12-dind
+    
+before_script:
+    - apt update -y -q
+    - apt install build-essential -y -q
+    - apt install curl -y -q
+    - "curl -sL https://deb.nodesource.com/setup_14.x | bash -"
+    - apt install nodejs -y -q
+    - node --version
+    - npm --version
+
+    
+build:
+    stage: build
+    image: mcr.microsoft.com/dotnet/sdk:5.0
+    script:
+        - dotnet restore AngularSpaIdentityServer.sln
+        - dotnet build AngularSpaIdentityServer.sln --no-restore
+
+        
+build-docker:
+    stage: build
+    image: docker:19.03.12
+    before_script:
+        - apk add --no-cache docker-compose
+        - docker info
+    script:
+        - echo "Building docker images"
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - docker-compose build
+        - docker tag asis-web:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+        - docker tag asis-web:latest $CI_REGISTRY_IMAGE:latest
+        - echo "Pushing docker images to registry"
+        - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+        - docker push $CI_REGISTRY_IMAGE:latest
+

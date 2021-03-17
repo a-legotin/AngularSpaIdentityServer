@@ -1,0 +1,19 @@
+version: '3.4'
+
+services:
+  asis-web:
+    image: asis-web
+    build:
+      context: .
+      dockerfile: AngularSpaIdentityServer.Web/Dockerfile
+    restart: on-failure
+    networks:
+      - main-network
+    expose:
+      - "8080"
+    ports:
+      - '8080:8080'
+
+networks:
+   main-network:
+     driver: bridge
